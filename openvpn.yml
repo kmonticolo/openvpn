@@ -36,6 +36,7 @@
     - name: Check if kernel is MP or SP
       shell: uname -v | awk 'BEGIN{RS="\0777";FS=".MP#"} { print NF-1 } '
       register: mp
+      check_mode: no
       changed_when: no
       tags:
         - get_generic_obj
@@ -110,6 +111,7 @@
       shell: basename /etc/hostname.*|cut -d. -f2
       register: ifname
       changed_when: no
+      check_mode: no
       tags:
         - install_packages
         - detect_iface
@@ -262,12 +264,14 @@
 
     - name: Detect if IPv6 is up on {{ ifname.stdout }}
       shell: ifconfig {{ ifname.stdout }}|sed -n '/inet6/p'|grep -v "inet6 fe80:"|wc -l|sed -e 's/^[ \t]*//'
+      check_mode: no
       register: ipv6is
       tags:
         - reload_pf
 
     - name: Get IPv6 address
       shell: ifconfig {{ ifname.stdout }} | grep inet6 | egrep -v -e "inet6 fe80:" -e autoconfprivacy | awk '{ print $2}'
+      check_mode: no
       register: ipv6addr
       when: ipv6is.stdout != "0"
       tags:
