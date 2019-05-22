@@ -25,8 +25,14 @@
         - install_python
 
     - name: Link python2.7 as default
-      raw: ln -s /usr/local/bin/python2.7 /usr/bin/python
-      ignore_errors: yes
+      file:
+        src: /usr/local/bin/python2.7
+        dest: /usr/bin/python
+        state: link
+
+      # raw: ln -s /usr/local/bin/python2.7 /usr/bin/python
+      # ignore_errors: yes
+      # 
     - name: Check numer of CPU present in the system
       shell: sysctl -n hw.ncpu
       register: ncpu
