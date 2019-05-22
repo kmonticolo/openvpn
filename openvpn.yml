@@ -69,6 +69,7 @@
       tags:
         - get_generic_obj
         - basesystem_config
+
     - name: Rebooting machine to activate new SP kernel
       shell: sleep 2 && shutdown -r now "Ansible updates triggered"
       async: 1
@@ -80,6 +81,7 @@
       tags:
         - get_generic_obj
         - basesystem_config
+
     - name: Waiting for machine to get back (this make take some time...)
       local_action: wait_for host={{ ansible_ssh_host }} state=started port=22 delay=120 timeout=120
       become: false
@@ -89,15 +91,18 @@
       tags:
         - get_generic_obj
         - basesystem_config
+
     - name: Update OpenBSD base system (can take lot of time)
       shell: syspatch
       register: bsd_updated
       tags:
         - update_bsd
+
     - name: Remove unnecessary software
       openbsd_pkg: name=opensmtpd state=absent
       tags:
         - remove_packages
+
     - name: Disable and Stop services
       shell: rcctl disable {{ item }} ; rcctl stop {{ item }}
       with_items:
@@ -105,6 +110,7 @@
         - sndiod
       tags:
         - disable_services
+
     - name: Detect interface name
       shell: basename /etc/hostname.*|cut -d. -f2
       register: ifname
@@ -113,12 +119,14 @@
         - detect_iface
         - is_aws
       # Assume, possibly wrong... that xnf0 is AWS specyfic as xnf0 is xen ifname,
+
     - name: Install dhcpcd only on AWS (xnf0) instance
       openbsd_pkg: name=dhcpcd state=present
       when: ifname.stdout == "xnf0"
       tags:
         - install_packages
         - detect_iface
+
     - name: Use dhcpcd only for IPv6
       shell: echo -e "ipv6only\nnohook resolv.conf" >> /etc/dhcpcd.conf
       when: ifname.stdout == "xnf0"
@@ -126,6 +134,7 @@
         - install_packages
         - basesystem_config
         - detect_iface
+
     - name: Enable dhcpcd
       shell: rcctl enable dhcpcd
       when: ifname.stdout == "xnf0"
@@ -133,16 +142,19 @@
         - install_packages
         - basesystem_config
         - detect_iface
+
     - name: Rebooting machine after updates
       shell: sleep 2 && shutdown -r now "Ansible updates triggered"
       async: 1
       poll: 0
       ignore_errors: true
       when: bsd_updated.changed
+
     - name: Waiting for machine to get back (this make take some time...)
       local_action: wait_for host={{ ansible_ssh_host }} state=started port=22 delay=120 timeout=120
       become: false
       when: bsd_updated.changed
+
     - name: Install required packages
       openbsd_pkg: name={{ item }} state=present
       with_items:
@@ -153,15 +165,18 @@
       tags:
         - install_packages
         - basesystem_config
+
     - name: Get openup
       shell: ftp -MVo /usr/bin/openup https://stable.mtier.org/openup;chmod +x /usr/bin/openup
       tags:
         - update_openup
         - install_openup
+
     - name: Update packages using openup
       shell: /usr/bin/openup -N
       tags:
         - update_packages
+
     - name: Create some dirs
       file: path={{ item.dir }} owner={{ item.owner }} group={{ item.group }} state=directory
       with_items:
@@ -176,10 +191,13 @@
       tags:
         - create_dirs
         - basesystem_config
+
     - name: Symlink bash (yes i like bash)
       file: state=link src=/usr/local/bin/bash dest=/bin/bash force=yes
+
     - name: Symlink easy-rsa
       file: state=link src=/usr/local/share/easy-rsa dest=/etc/openvpn/easy-rsa force=yes
+
     - name: Copy config files
       copy: src=files/{{ item.src }} dest={{ item.dst}} owner={{ item.owner }} group={{ item.group }} mode={{ item.mode }} #mode="u+rwx,go-w"
       with_items:
@@ -193,26 +211,32 @@
       tags:
         - copy_configs
         - basesystem_config
+
     - name: Generate pf config file
       template: src=files/pf.j2 dest=/etc/pf.conf owner=root group=wheel
       tags:
         - copy_configs
+
     - name: Update listening IP - Others
       shell: ifconfig {{ ifname.stdout }}|grep inet|grep -v inet6|awk '{ print $2}'|xargs -I xxx sed -i 's/[[:<:]]LISTEN_IP[[:>:]]/xxx/g'
                /etc/openvpn/export/privateVPN-Desktop.visc/config.conf
                /etc/openvpn/export/privateVPN-Mobile.ovpn.template
+
       when: ifname.stdout == "vio0"
       tags:
         - update_templates
         - copy_configs
+
     - name: Update listening IP - AWS
       shell: ftp -MVo - http://169.254.169.254/latest/meta-data/public-ipv4|xargs -I xxx sed -i 's/[[:<:]]LISTEN_IP[[:>:]]/xxx/g'
                /etc/openvpn/export/privateVPN-Desktop.visc/config.conf
                /etc/openvpn/export/privateVPN-Mobile.ovpn.template
+
       when: ifname.stdout == "xnf0"
       tags:
         - update_templates
         - copy_configs
+
     - name: Let's do some sed's on the template files
       shell: "{{ item }}"
       with_items:
@@ -225,17 +249,20 @@
         - update_templates
         - copy_configs
       # Have better idea? Create pull request...
+
     - name: Detect if IPv6 is up on {{ ifname.stdout }}
       shell: ifconfig {{ ifname.stdout }}|sed -n '/inet6/p'|grep -v "inet6 fe80:"|wc -l|sed -e 's/^[ \t]*//'
       register: ipv6is
       tags:
         - reload_pf
+
     - name: Get IPv6 address
       shell: ifconfig {{ ifname.stdout }} | grep inet6 | egrep -v -e "inet6 fe80:" -e autoconfprivacy | awk '{ print $2}'
       register: ipv6addr
       when: ipv6is.stdout != "0"
       tags:
         - reload_pf
+
     - name: If IPv6 is present add additional rules to pf and place IPv6 address
       shell: "{{ item }}"
       with_items:
@@ -244,10 +271,12 @@
       when: ipv6is.stdout != "0"
       tags:
         - reload_pf
+
     - name: Reload pf
       command: pfctl -f /etc/pf.conf
       tags:
         - reload_pf
+
     - name: Easy-RSA - Initialize and Generate PKI/CA/Server Certificate
       shell: chdir=/etc/openvpn/easy-rsa/ {{ item }}
       with_items:
@@ -257,6 +286,7 @@
         - hostname | xargs -I xxx ./easyrsa --use-algo=ec --curve={{ crypto_curve }} --ns-cert=yes build-server-full "PrivateVPN-xxx" nopass
       tags:
         - create_pki
+
     - name: Create one sample set of Client certificates. John have Desktop while Barbara have iPhone
       shell: chdir=/etc/openvpn/easy-rsa/ {{ item }}
       with_items:
@@ -264,18 +294,22 @@
         - ./easyrsa --use-algo=ec --curve={{ crypto_curve }} build-client-full privateVPN-Mobile-BarbaraDoe nopass
       tags:
         - gen_client_certs
+
     - name: Create shared-secret for tls-crypt
       shell: openvpn --genkey --secret /etc/openvpn/easy-rsa/pki/ta.key
       tags:
         - gen_ta
+
     - name: Generate CRL
       shell: cd /etc/openvpn/easy-rsa/; ./easyrsa gen-crl ; cp pki/crl.pem /etc/openvpn/jail/crl.pem
       tags:
         - update_crl
+
     - name: Fix CRL permissions so jailed openvpn can read content
       file: path=/etc/openvpn/jail/crl.pem mode=0644
       tags:
         - update_crl
+
     - name: Generate SHA256 from CA certificate
       shell: openssl x509 -in /etc/openvpn/easy-rsa/pki/ca.crt -noout -sha256 -fingerprint|cut -d= -f2
       register: ca_sha2
@@ -283,12 +317,14 @@
         - get_ca_sha2
         - update_ca_hash
     # verify-hash is not yet supported on iOS but we generate it anyway for future use
+
     - name: Generate SHA1 from CA certificate
       shell: openssl x509 -in /etc/openvpn/easy-rsa/pki/ca.crt -noout -sha1 -fingerprint|cut -d= -f2
       register: ca_sha1
       tags:
         - get_ca_sha1
         - update_ca_hash
+
     - name: Put SHA256 and SHA1 into client configurations
       shell: "{{ item }}"
       with_items:
@@ -297,6 +333,7 @@
       tags:
         - update_ca_hash
     # I do not care for other entries in sysctl.conf as we do it for this playbook purpose, feel free to make it better ;)
+
     - name: Enable forwarding and make it permement
       shell: "{{ item }}"
       with_items:
@@ -306,6 +343,7 @@
         - sysctl net.inet6.ip6.forwarding=1
       tags:
         - enable_forwarding
+
     - name: Use localhost as primary DNS server, and Google as secondary
       shell: "{{ item }}"
       with_items:
@@ -314,10 +352,12 @@
         - pgrep dhclient | while read dhcpds ; do kill -HUP $dhcpds; done
       tags:
         - update_resolvconf
+
     - name: Configure unbound
       shell: "{{ item }}"
       with_items:
         - sed -i '/auto-trust-anchor-file/s/#//g' /var/unbound/etc/unbound.conf
+
     - name: Update root hints file
       get_url:
         url: https://www.internic.net/domain/named.root
@@ -327,6 +367,7 @@
         - update_hints
         - install_unbound
     # ToDO: fix BSD init services to make it compatibile properly
+
     - name: Enable services ans start them
       shell: rcctl {{ item }}
       with_items:
@@ -336,6 +377,7 @@
         - start unbound
       tags:
         - enable_services
+
     - name: Pack Client Configs (one for iPhone OpenVPN and second for Viscosity Desktop VPN)
       shell: chdir=/etc/openvpn/export/ {{ item }}
       with_items:
