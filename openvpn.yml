@@ -4,10 +4,11 @@
   vars:
     ca_name: unused
     crypto_curve: secp256k1
+    mirror: http://ftp.icm.edu.pl/pub/OpenBSD
   tasks:
     - name: Create installurl with repos
       copy:
-        content: "http://ftp.icm.edu.pl/pub/OpenBSD\n"
+        content: "{{ mirror }}\n"
         dest: /etc/installurl
       tags:
         - update_installurl
@@ -44,7 +45,7 @@
 
     - name: copy SP kernel
       copy:
-        src: http://ftp.icm.edu.pl/pub/OpenBSD/6.2/amd64/bsd
+        src: "{{ mirror }}/{{ ansible_distribution_version }}/{{ ansible_architecture }}/bsd"
         dest: /bsd.sp
       when:
         - "ansible_processor_count|int == 1"
