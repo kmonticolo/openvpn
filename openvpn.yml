@@ -139,7 +139,10 @@
         - detect_iface
 
     - name: Enable dhcpcd
-      shell: rcctl enable dhcpcd
+      service:
+        name: dhcpcd
+        state: started
+        enabled: yes
       when: ifname.stdout == "xnf0"
       tags:
         - install_packages
