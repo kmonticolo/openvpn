@@ -44,10 +44,11 @@
         - get_generic_obj
         - basesystem_config
 
-    - name: copy SP kernel
+    - name: Copy SP kernel
       get_url:
         url: "{{ mirror }}/{{ ansible_distribution_version }}/{{ ansible_architecture }}/bsd"
         dest: /bsd.sp
+      register: kernelcopied
       when:
         - "ansible_processor_count|int == 1"
         - mp.stdout == "1"
@@ -69,9 +70,11 @@
       async: 1
       poll: 0
       ignore_errors: true
+      register: reboot
       when:
         - "ansible_processor_count|int == 1"
         - mp.stdout == "1"
+        - kernelcopied.changed
       tags:
         - get_generic_obj
         - basesystem_config
@@ -82,6 +85,7 @@
       when:
         - "ansible_processor_count|int == 1"
         - mp.stdout == "1"
+        - reboot.changed
       tags:
         - get_generic_obj
         - basesystem_config
