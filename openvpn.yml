@@ -94,7 +94,7 @@
       register: bsd_updated
       tags:
         - update_bsd
-    - name: Remove unessesery software
+    - name: Remove unnecessary software
       openbsd_pkg: name=opensmtpd state=absent
       tags:
         - remove_packages
