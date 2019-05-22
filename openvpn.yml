@@ -30,15 +30,21 @@
         dest: /usr/bin/python
         state: link
 
+    - name: Get facts
+      setup:
+
     - name: Check numer of CPU present in the system
       shell: sysctl -n hw.ncpu
       register: ncpu
+      changed_when: no
       tags:
         - get_generic_obj
         - basesystem_config
+
     - name: Check if kernel is MP or SP
       shell: uname -v | awk 'BEGIN{RS="\0777";FS=".MP#"} { print NF-1 } '
       register: mp
+      changed_when: no
       tags:
         - get_generic_obj
         - basesystem_config
@@ -49,6 +55,7 @@
         dest: /bsd.sp
       when:
         - ncpu.stdout == "1"
+        #- '"{{ ansible_processor_count }}" == "1"'
         - mp.stdout == "1"
       tags:
         - get_generic_obj
