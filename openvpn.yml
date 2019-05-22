@@ -30,9 +30,6 @@
         dest: /usr/bin/python
         state: link
 
-      # raw: ln -s /usr/local/bin/python2.7 /usr/bin/python
-      # ignore_errors: yes
-      # 
     - name: Check numer of CPU present in the system
       shell: sysctl -n hw.ncpu
       register: ncpu
@@ -45,33 +42,18 @@
       tags:
         - get_generic_obj
         - basesystem_config
-    - name: Get GENERIC non-MP object files for OpenBSD 6.2. See README file why it's done
-      get_url:
-        url: https://onefellow.com/download/GENERIC62.tar.gz
-        dest: /usr/share/compile/GENERIC62.tar.gz
-        checksum: sha256:649d5297933abb5a73593ff07c319511dc9a34430b362b7e8aeb2c3e521d4d7a
+
+    - name: copy SP kernel
+      copy:
+        src: http://ftp.icm.edu.pl/pub/OpenBSD/6.2/amd64/bsd
+        dest: /bsd.sp
       when:
         - ncpu.stdout == "1"
         - mp.stdout == "1"
       tags:
         - get_generic_obj
         - basesystem_config
-    - name: Extract GENERIC obj into place
-      shell: tar -zxvf /usr/share/compile/GENERIC62.tar.gz -C /usr/share/compile/
-      when:
-        - ncpu.stdout == "1"
-        - mp.stdout == "1"
-      tags:
-        - get_generic_obj
-        - basesystem_config
-    - name: Copy SP kernel only when MP detected on SP platform
-      shell: cp /bsd.sp /bsd
-      when:
-        - ncpu.stdout == "1"
-        - mp.stdout == "1"
-      tags:
-        - get_generic_obj
-        - basesystem_config
+
     - name: Update kernel hash to make KARL working with SP kernel
       shell: sha256 -h /var/db/kernel.SHA256 /bsd
       when:
