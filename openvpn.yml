@@ -6,13 +6,6 @@
     crypto_curve: secp256k1
     mirror: http://ftp.icm.edu.pl/pub/OpenBSD
   tasks:
-    - name: Create installurl with repos
-      copy:
-        content: "{{ mirror }}\n"
-        dest: /etc/installurl
-      tags:
-        - update_installurl
-        - basesystem_config
 
     - name: Install python with pkg_add
       raw: pkg_add -Iz python%2.7
@@ -34,6 +27,14 @@
     - name: Get facts
       setup:
 
+    - name: Create installurl with repos
+      copy:
+        content: "{{ mirror }}\n"
+        dest: /etc/installurl
+      tags:
+        - update_installurl
+        - basesystem_config
+
     - name: Check if kernel is MP or SP
       shell: uname -v | awk 'BEGIN{RS="\0777";FS=".MP#"} { print NF-1 } '
       register: mp
@@ -44,8 +45,8 @@
         - basesystem_config
 
     - name: copy SP kernel
-      copy:
-        src: "{{ mirror }}/{{ ansible_distribution_version }}/{{ ansible_architecture }}/bsd"
+      get_url:
+        url: "{{ mirror }}/{{ ansible_distribution_version }}/{{ ansible_architecture }}/bsd"
         dest: /bsd.sp
       when:
         - "ansible_processor_count|int == 1"
