@@ -116,14 +116,22 @@
       # Assume, possibly wrong... that xnf0 is AWS specyfic as xnf0 is xen ifname,
 
     - name: Install dhcpcd only on AWS (xnf0) instance
-      openbsd_pkg: name=dhcpcd state=present
+      openbsd_pkg:
+        name: dhcpcd
+        state: present
       when: ifname.stdout == "xnf0"
       tags:
         - install_packages
         - detect_iface
 
     - name: Use dhcpcd only for IPv6
-      shell: echo -e "ipv6only\nnohook resolv.conf" >> /etc/dhcpcd.conf
+      blockinfile:
+        path: /etc/dhcpcd.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK "
+        insertafter: EOF
+        block: |
+          ipv6only
+          nohook resolv.conf
       when: ifname.stdout == "xnf0"
       tags:
         - install_packages
