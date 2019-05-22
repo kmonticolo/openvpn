@@ -1,0 +1,2 @@
+[privateVPN]
+localhost ansible_connection=local
