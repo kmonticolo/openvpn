@@ -12,11 +12,18 @@
       tags:
         - update_installurl
         - basesystem_config
-    - name: Install python needed by ansible
-      raw: pkg_add python%2.7
+
+    - name: Install python with pkg_add
+      raw: pkg_add -Iz python%2.7
+      register: pkg_add_getresult
+      changed_when:
+        - "': ok' in pkg_add_getresult.stdout"
+      until: pkg_add_getresult is succeeded
+      retries: 5
       tags:
         - basesystem_config
         - install_python
+
     - name: Link python2.7 as default
       raw: ln -s /usr/local/bin/python2.7 /usr/bin/python
       ignore_errors: yes
