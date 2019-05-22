@@ -263,6 +263,7 @@
     - name: Detect if IPv6 is up on {{ ifname.stdout }}
       shell: ifconfig {{ ifname.stdout }}|sed -n '/inet6/p'|grep -v "inet6 fe80:"|wc -l|sed -e 's/^[ \t]*//'
       check_mode: no
+      changed_when: no
       register: ipv6is
       tags:
         - reload_pf
@@ -270,6 +271,7 @@
     - name: Get IPv6 address
       shell: ifconfig {{ ifname.stdout }} | grep inet6 | egrep -v -e "inet6 fe80:" -e autoconfprivacy | awk '{ print $2}'
       check_mode: no
+      changed_when: no
       register: ipv6addr
       when: ipv6is.stdout != "0"
       tags:
