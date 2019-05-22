@@ -108,6 +108,7 @@
     - name: Detect interface name
       shell: basename /etc/hostname.*|cut -d. -f2
       register: ifname
+      changed_when: no
       tags:
         - install_packages
         - detect_iface
