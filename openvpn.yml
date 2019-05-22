@@ -86,6 +86,7 @@
     - name: Update OpenBSD base system (can take lot of time)
       shell: syspatch
       register: bsd_updated
+      changed_when: '"Installing" in bsd_updated.stdout'
       tags:
         - update_bsd
 
