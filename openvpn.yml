@@ -7,7 +7,7 @@
   tasks:
     - name: Create installurl with repos
       copy:
-        content: 'https://cdn.openbsd.org/pub/OpenBSD'
+        content: "https://cdn.openbsd.org/pub/OpenBSD\n"
         dest: /etc/installurl
       tags:
         - update_installurl
