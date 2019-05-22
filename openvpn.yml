@@ -174,7 +174,10 @@
         - basesystem_config
 
     - name: Get openup
-      shell: ftp -MVo /usr/bin/openup https://stable.mtier.org/openup;chmod +x /usr/bin/openup
+      get_url:
+        url: https://stable.mtier.org/openup
+        dest: /usr/bin/openup
+        mode: '0755'
       tags:
         - update_openup
         - install_openup
