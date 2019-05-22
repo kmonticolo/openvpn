@@ -6,7 +6,9 @@
     crypto_curve: secp256k1
   tasks:
     - name: Create installurl with repos
-      raw: echo "http://mirror.switch.ch/ftp/pub/OpenBSD" > /etc/installurl
+      copy:
+        content: 'https://cdn.openbsd.org/pub/OpenBSD/'
+        dest: /etc/installurl
       tags:
         - update_installurl
         - basesystem_config
