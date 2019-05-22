@@ -55,7 +55,7 @@
         dest: /bsd.sp
       when:
         - ncpu.stdout == "1"
-        #- '"{{ ansible_processor_count }}" == "1"'
+        #- {{ ansible_processor_count }} == "1"
         - mp.stdout == "1"
       tags:
         - get_generic_obj
@@ -104,7 +104,10 @@
         - remove_packages
 
     - name: Disable and Stop services
-      shell: rcctl disable {{ item }} ; rcctl stop {{ item }}
+      service:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
       with_items:
         - smtpd
         - sndiod
