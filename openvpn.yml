@@ -297,10 +297,22 @@
       tags:
         - reload_pf
 
-    - name: Easy-RSA - Initialize and Generate PKI/CA/Server Certificate
+    - name: Check for certificate
+      stat:
+        path: /usr/local/share/easy-rsa/pki/ca.crt
+      register: cert
+
+    - name: Easy-RSA - Initialize PKI
       shell: chdir=/etc/openvpn/easy-rsa/ {{ item }}
       with_items:
         - ./easyrsa init-pki
+      when: not cert.stat.exists
+      tags:
+        - create_pki
+
+    - name: Easy-RSA - Generate PKI/CA/Server Certificate
+      shell: chdir=/etc/openvpn/easy-rsa/ {{ item }}
+      with_items:
         - ./easyrsa gen-dh
         - apg -a 1 -m 6 -MCL -n1 | xargs -I xxx ./easyrsa --batch --req-cn="privateVPN CA (xxx)" --use-algo=ec --curve={{ crypto_curve }} build-ca nopass
         - hostname | xargs -I xxx ./easyrsa --use-algo=ec --curve={{ crypto_curve }} --ns-cert=yes build-server-full "PrivateVPN-xxx" nopass
